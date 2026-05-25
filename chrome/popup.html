@@ -104,6 +104,20 @@
       text-align: center;
     }
     .status.active { color: #10b981; }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      padding: 4px 8px;
+      border: 1px solid #4b5563;
+      border-radius: 4px;
+      background: #374151;
+      color: #f9fafb;
+      font-size: 11px;
+    }
+    input[type="text"]:focus { outline: none; border-color: #3b82f6; }
+    input[type="text"]::placeholder { color: #6b7280; }
+    .btn.compact { display: inline-block; width: auto; padding: 5px 12px; }
   </style>
 </head>
 <body>
@@ -169,10 +183,15 @@
   <div class="section-label">Dictionary</div>
 
   <div class="field">
-    <input type="file" id="dictFile" accept=".txt" style="display:none">
-    <button class="btn primary" id="uploadBtn">Upload custom dictionary</button>
+    <div class="field-header">
+      <label for="dictUrl">Path or URL</label>
+    </div>
+    <div class="row">
+      <input type="text" id="dictUrl" placeholder="file:///path/to/dict.txt or https://…">
+      <button class="btn primary compact" id="loadBtn">Load</button>
+    </div>
     <p class="status" id="dictStatus">No dictionary loaded</p>
-    <button class="btn danger" id="resetBtn" style="margin-top:6px;display:none">Reset to default</button>
+    <button class="btn danger" id="resetBtn" style="margin-top:6px;display:none">Reset</button>
   </div>
 
   <script src="popup-settings.js"></script>

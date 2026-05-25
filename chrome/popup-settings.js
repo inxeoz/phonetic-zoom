@@ -5,15 +5,15 @@ const SLIDER_KEYS = ["fontSize", "letterSpacing", "padding", "verticalOffset"];
 
 // ── Slider + number input binding ──────────────────────────────────────────────
 function bindSlider(key) {
-  const slider  = document.getElementById(key);
+  const slider   = document.getElementById(key);
   const numInput = document.getElementById(key + "Input");
-  const display = document.getElementById(key + "Val");
+  const display  = document.getElementById(key + "Val");
 
   function commit(raw) {
     const v = Math.min(parseFloat(numInput.max), Math.max(parseFloat(numInput.min), parseFloat(raw)));
     if (isNaN(v)) return;
-    slider.value    = v;
-    numInput.value  = v;
+    slider.value        = v;
+    numInput.value      = v;
     display.textContent = v;
     chrome.storage.sync.set({ [key]: v });
   }
@@ -33,7 +33,6 @@ function bindSlider(key) {
 
 // ── Load saved settings ────────────────────────────────────────────────────────
 chrome.storage.sync.get(Object.keys(DEFAULTS), result => {
-  // Theme toggle
   const theme = result.theme || DEFAULTS.theme;
   const themeEl = document.getElementById("theme" + theme.charAt(0).toUpperCase() + theme.slice(1));
   if (themeEl) themeEl.checked = true;
@@ -44,78 +43,118 @@ chrome.storage.sync.get(Object.keys(DEFAULTS), result => {
     });
   });
 
-  // Sliders
   for (const key of SLIDER_KEYS) {
     const val = result[key] ?? DEFAULTS[key];
-    document.getElementById(key).value           = val;
+    document.getElementById(key).value               = val;
     document.getElementById(key + "Val").textContent = val;
-    document.getElementById(key + "Input").value = val;
+    document.getElementById(key + "Input").value     = val;
     bindSlider(key);
   }
 });
 
-// ── Dictionary status ──────────────────────────────────────────────────────────
-const statusEl = document.getElementById("dictStatus");
+// ── Dictionary ─────────────────────────────────────────────────────────────────
+const statusEl  = document.getElementById("dictStatus");
 const resetBtn  = document.getElementById("resetBtn");
+const dictUrlEl = document.getElementById("dictUrl");
 
 function showDictStatus(name) {
   if (name) {
-    statusEl.textContent = "Using: " + name;
-    statusEl.className   = "status active";
+    statusEl.textContent   = "Using: " + name;
+    statusEl.className     = "status active";
     resetBtn.style.display = "block";
   } else {
-    statusEl.textContent = "No dictionary loaded";
-    statusEl.className   = "status";
+    statusEl.textContent   = "No dictionary loaded";
+    statusEl.className     = "status";
     resetBtn.style.display = "none";
   }
 }
 
-chrome.storage.local.get("customDictName", r => showDictStatus(r.customDictName || null));
-
-// ── Upload ─────────────────────────────────────────────────────────────────────
-document.getElementById("uploadBtn").addEventListener("click", () => {
-  document.getElementById("dictFile").click();
+// Restore last-used URL and dict name on open
+chrome.storage.local.get(["customDictUrl", "customDictName"], r => {
+  if (r.customDictUrl) dictUrlEl.value = r.customDictUrl;
+  showDictStatus(r.customDictName || null);
 });
 
-document.getElementById("dictFile").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
+// ── URL loader ─────────────────────────────────────────────────────────────────
+// Chrome blocks tabs.create() for file:// URLs from extension pages.
+// Workaround: query an already-open tab at that URL and inject into it.
+// Also requires "Allow access to file URLs" enabled in chrome://extensions.
+function readFileViaTab(url) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.query({ url }, tabs => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      if (!tabs.length) {
+        reject(new Error(
+          "File not open in Chrome — open it in a tab first, and enable " +
+          '"Allow access to file URLs" in chrome://extensions'
+        ));
+        return;
+      }
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        func: () => document.body.innerText,
+      }).then(([{ result }]) => resolve(result))
+        .catch(err => reject(new Error(err.message)));
+    });
+  });
+}
+
+function loadUrl(url) {
+  if (url.startsWith("file://")) return readFileViaTab(url);
+  return fetch(url).then(res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();
+  });
+}
+
+// ── Load ───────────────────────────────────────────────────────────────────────
+document.getElementById("loadBtn").addEventListener("click", () => {
+  const url = dictUrlEl.value.trim();
+  if (!url) return;
 
   statusEl.textContent = "Loading…";
   statusEl.className   = "status";
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    chrome.storage.local.get("dictRev", r => {
-      chrome.storage.local.set({
-        customDict:     reader.result,
-        customDictName: file.name,
-        dictRev:        (r.dictRev || 0) + 1,
-      }, () => {
-        if (chrome.runtime.lastError) {
-          statusEl.textContent = "Save failed: " + chrome.runtime.lastError.message;
-          statusEl.className   = "status";
-        } else {
-          showDictStatus(file.name);
-        }
+  loadUrl(url)
+    .then(text => {
+      const name = url.split("/").pop() || url;
+      chrome.storage.local.get("dictRev", r => {
+        chrome.storage.local.set({
+          customDict:     text,
+          customDictName: name,
+          customDictUrl:  url,
+          dictRev:        (r.dictRev || 0) + 1,
+        }, () => {
+          if (chrome.runtime.lastError) {
+            statusEl.textContent = "Save failed: " + chrome.runtime.lastError.message;
+            statusEl.className   = "status";
+          } else {
+            showDictStatus(name);
+          }
+        });
       });
+    })
+    .catch(err => {
+      statusEl.textContent = "Load failed: " + err.message;
+      statusEl.className   = "status";
     });
-  };
-  reader.onerror = () => {
-    statusEl.textContent = "Error reading file";
-    statusEl.className   = "status";
-  };
-  reader.readAsText(file);
-  e.target.value = "";
 });
 
 // ── Reset ──────────────────────────────────────────────────────────────────────
 resetBtn.addEventListener("click", () => {
   chrome.storage.local.get("dictRev", r => {
-    // Bump rev first so content scripts reload, then remove the data
     chrome.storage.local.set({ dictRev: (r.dictRev || 0) + 1 }, () => {
-      chrome.storage.local.remove(["customDict", "customDictName"], () => {
-        showDictStatus(null);
+      chrome.storage.local.remove(["customDict", "customDictName", "customDictUrl"], () => {
+        if (chrome.runtime.lastError) {
+          statusEl.textContent = "Reset failed: " + chrome.runtime.lastError.message;
+          statusEl.className   = "status";
+        } else {
+          dictUrlEl.value = "";
+          showDictStatus(null);
+        }
       });
     });
   });

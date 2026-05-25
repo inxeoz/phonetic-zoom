@@ -5,15 +5,15 @@ const SLIDER_KEYS = ["fontSize", "letterSpacing", "padding", "verticalOffset"];
 
 // ── Slider + number input binding ──────────────────────────────────────────────
 function bindSlider(key) {
-  const slider  = document.getElementById(key);
+  const slider   = document.getElementById(key);
   const numInput = document.getElementById(key + "Input");
-  const display = document.getElementById(key + "Val");
+  const display  = document.getElementById(key + "Val");
 
   function commit(raw) {
     const v = Math.min(parseFloat(numInput.max), Math.max(parseFloat(numInput.min), parseFloat(raw)));
     if (isNaN(v)) return;
-    slider.value    = v;
-    numInput.value  = v;
+    slider.value        = v;
+    numInput.value      = v;
     display.textContent = v;
     browser.storage.sync.set({ [key]: v });
   }
@@ -33,7 +33,6 @@ function bindSlider(key) {
 
 // ── Load saved settings ────────────────────────────────────────────────────────
 browser.storage.sync.get(Object.keys(DEFAULTS)).then(result => {
-  // Theme toggle
   const theme = result.theme || DEFAULTS.theme;
   const themeEl = document.getElementById("theme" + theme.charAt(0).toUpperCase() + theme.slice(1));
   if (themeEl) themeEl.checked = true;
@@ -44,83 +43,112 @@ browser.storage.sync.get(Object.keys(DEFAULTS)).then(result => {
     });
   });
 
-  // Sliders
   for (const key of SLIDER_KEYS) {
     const val = result[key] ?? DEFAULTS[key];
-    document.getElementById(key).value           = val;
+    document.getElementById(key).value               = val;
     document.getElementById(key + "Val").textContent = val;
-    document.getElementById(key + "Input").value = val;
+    document.getElementById(key + "Input").value     = val;
     bindSlider(key);
   }
 });
 
-// ── Dictionary status ──────────────────────────────────────────────────────────
-const statusEl = document.getElementById("dictStatus");
+// ── Dictionary ─────────────────────────────────────────────────────────────────
+const statusEl  = document.getElementById("dictStatus");
 const resetBtn  = document.getElementById("resetBtn");
+const dictUrlEl = document.getElementById("dictUrl");
 
 function showDictStatus(name) {
   if (name) {
-    statusEl.textContent = "Using: " + name;
-    statusEl.className   = "status active";
+    statusEl.textContent   = "Using: " + name;
+    statusEl.className     = "status active";
     resetBtn.style.display = "block";
   } else {
-    statusEl.textContent = "No dictionary loaded";
-    statusEl.className   = "status";
+    statusEl.textContent   = "No dictionary loaded";
+    statusEl.className     = "status";
     resetBtn.style.display = "none";
   }
 }
 
-browser.storage.local.get("customDictName").then(r => showDictStatus(r.customDictName || null));
-
-// ── Upload ─────────────────────────────────────────────────────────────────────
-document.getElementById("uploadBtn").addEventListener("click", () => {
-  document.getElementById("dictFile").click();
+// Restore last-used URL and dict name on open
+browser.storage.local.get(["customDictUrl", "customDictName"]).then(r => {
+  if (r.customDictUrl) dictUrlEl.value = r.customDictUrl;
+  showDictStatus(r.customDictName || null);
 });
 
-document.getElementById("dictFile").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
+// ── URL loader ─────────────────────────────────────────────────────────────────
+// Firefox blocks both fetch() and tabs.create() for file:// URLs from extension
+// pages. Only way in: find an already-open tab at that URL and inject into it.
+// The user must open the file in Firefox once (drag to address bar, or
+// File → Open File), then click Load.
+function readFileViaTab(url) {
+  return browser.tabs.query({ url }).then(tabs => {
+    if (!tabs.length) {
+      throw new Error(
+        "File not open in Firefox — drag it to the address bar (or File → Open File), then click Load"
+      );
+    }
+    return browser.scripting.executeScript({
+      target: { tabId: tabs[0].id },
+      func: () => document.body.innerText,
+    }).then(([{ result }]) => result);
+  });
+}
+
+function loadUrl(url) {
+  if (url.startsWith("file://")) return readFileViaTab(url);
+  return fetch(url).then(res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();
+  });
+}
+
+// ── Load ───────────────────────────────────────────────────────────────────────
+document.getElementById("loadBtn").addEventListener("click", () => {
+  const url = dictUrlEl.value.trim();
+  if (!url) return;
 
   statusEl.textContent = "Loading…";
   statusEl.className   = "status";
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    browser.storage.local.get("dictRev").then(r => {
-      browser.storage.local.set({
-        customDict:     reader.result,
-        customDictName: file.name,
-        dictRev:        (r.dictRev || 0) + 1,
-      }).then(() => showDictStatus(file.name))
-        .catch(err => {
-          statusEl.textContent = "Save failed: " + err.message;
-          statusEl.className   = "status";
-        });
-    }).catch(err => {
-      statusEl.textContent = "Save failed: " + err.message;
+  loadUrl(url)
+    .then(text => {
+      const name = url.split("/").pop() || url;
+      return browser.storage.local.get("dictRev").then(r =>
+        browser.storage.local.set({
+          customDict:     text,
+          customDictName: name,
+          customDictUrl:  url,
+          dictRev:        (r.dictRev || 0) + 1,
+        }).then(() => showDictStatus(name))
+          .catch(err => {
+            statusEl.textContent = "Save failed: " + err.message;
+            statusEl.className   = "status";
+          })
+      ).catch(err => {
+        statusEl.textContent = "Save failed: " + err.message;
+        statusEl.className   = "status";
+      });
+    })
+    .catch(err => {
+      statusEl.textContent = "Load failed: " + err.message;
       statusEl.className   = "status";
     });
-  };
-  reader.onerror = () => {
-    statusEl.textContent = "Error reading file";
-    statusEl.className   = "status";
-  };
-  reader.readAsText(file);
-  e.target.value = "";
 });
 
 // ── Reset ──────────────────────────────────────────────────────────────────────
 resetBtn.addEventListener("click", () => {
-  browser.storage.local.get("dictRev").then(r => {
-    // Bump rev first so content scripts reload, then remove the data
+  browser.storage.local.get("dictRev").then(r =>
     browser.storage.local.set({ dictRev: (r.dictRev || 0) + 1 })
-      .then(() => browser.storage.local.remove(["customDict", "customDictName"]))
-      .then(() => showDictStatus(null))
+      .then(() => browser.storage.local.remove(["customDict", "customDictName", "customDictUrl"]))
+      .then(() => {
+        dictUrlEl.value = "";
+        showDictStatus(null);
+      })
       .catch(err => {
         statusEl.textContent = "Reset failed: " + err.message;
         statusEl.className   = "status";
-      });
-  }).catch(err => {
+      })
+  ).catch(err => {
     statusEl.textContent = "Reset failed: " + err.message;
     statusEl.className   = "status";
   });
