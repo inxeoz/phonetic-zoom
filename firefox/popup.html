@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 280px;
+      padding: 16px;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #1f2937;
+      color: #f9fafb;
+      font-size: 13px;
+    }
+
+    h1 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #e5e7eb;
+    }
+
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+      margin-bottom: 10px;
+      margin-top: 4px;
+    }
+
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .field-header label { font-size: 12px; color: #9ca3af; }
+    .field-header .value { font-size: 12px; color: #e5e7eb; font-weight: 500; }
+
+    .row { display: flex; align-items: center; gap: 10px; }
+    .row input[type="range"] { flex: 1; accent-color: #3b82f6; }
+    .row input[type="number"] {
+      width: 52px;
+      padding: 3px 6px;
+      border: 1px solid #4b5563;
+      border-radius: 4px;
+      background: #374151;
+      color: #f9fafb;
+      font-size: 12px;
+      text-align: center;
+    }
+    .row input[type="number"]:focus { outline: none; border-color: #3b82f6; }
+
+    .theme-toggle {
+      display: flex;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #4b5563;
+    }
+    .theme-toggle input { display: none; }
+    .theme-toggle label {
+      flex: 1;
+      text-align: center;
+      padding: 6px 0;
+      font-size: 12px;
+      color: #9ca3af;
+      background: #374151;
+      cursor: pointer;
+    }
+    .theme-toggle label + label { border-left: 1px solid #4b5563; }
+    .theme-toggle input:checked + label {
+      background: #3b82f6;
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 7px 0;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      background: #374151;
+      color: #e5e7eb;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn:hover { background: #4b5563; }
+    .btn.primary { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+    .btn.primary:hover { background: #2563eb; }
+    .btn.danger { border-color: #ef4444; color: #ef4444; }
+    .btn.danger:hover { background: #ef4444; color: #fff; }
+
+    .status {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 6px;
+      text-align: center;
+    }
+    .status.active { color: #10b981; }
+  </style>
+</head>
+<body>
+  <h1>IPA Popup Settings</h1>
+
+  <div class="section-label">Appearance</div>
+
+  <div class="field">
+    <div class="theme-toggle">
+      <input type="radio" name="theme" id="themeDark"  value="dark">
+      <label for="themeDark">Dark</label>
+      <input type="radio" name="theme" id="themeLight" value="light">
+      <label for="themeLight">Light</label>
+      <input type="radio" name="theme" id="themeAuto"  value="auto">
+      <label for="themeAuto">Auto</label>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="field-header">
+      <label for="fontSize">Font size</label>
+      <span class="value"><span id="fontSizeVal">22</span> px</span>
+    </div>
+    <div class="row">
+      <input type="range"  id="fontSize"      min="12" max="48" value="22">
+      <input type="number" id="fontSizeInput" min="12" max="48" value="22">
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="field-header">
+      <label for="letterSpacing">Letter spacing</label>
+      <span class="value"><span id="letterSpacingVal">2</span> px</span>
+    </div>
+    <div class="row">
+      <input type="range"  id="letterSpacing"      min="0" max="10" value="2"  step="0.5">
+      <input type="number" id="letterSpacingInput" min="0" max="10" value="2"  step="0.5">
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="field-header">
+      <label for="padding">Padding</label>
+      <span class="value"><span id="paddingVal">10</span> px</span>
+    </div>
+    <div class="row">
+      <input type="range"  id="padding"      min="4" max="30" value="10">
+      <input type="number" id="paddingInput" min="4" max="30" value="10">
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="field-header">
+      <label for="verticalOffset">Vertical offset</label>
+      <span class="value"><span id="verticalOffsetVal">8</span> px</span>
+    </div>
+    <div class="row">
+      <input type="range"  id="verticalOffset"      min="0" max="60" value="8">
+      <input type="number" id="verticalOffsetInput" min="0" max="60" value="8">
+    </div>
+  </div>
+
+  <div class="section-label">Dictionary</div>
+
+  <div class="field">
+    <input type="file" id="dictFile" accept=".txt" style="display:none">
+    <button class="btn primary" id="uploadBtn">Upload custom dictionary</button>
+    <p class="status" id="dictStatus">No dictionary loaded</p>
+    <button class="btn danger" id="resetBtn" style="margin-top:6px;display:none">Reset to default</button>
+  </div>
+
+  <script src="popup-settings.js"></script>
+</body>
+</html>

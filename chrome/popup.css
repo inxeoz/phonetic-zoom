@@ -1,0 +1,17 @@
+#word-hover-popup {
+  position: fixed;
+  pointer-events: none;
+  z-index: 2147483647;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  border-radius: 10px;
+  white-space: nowrap;
+  line-height: 1.6;
+  /* bottom edge aligns to top value; popup sits above the cursor */
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: opacity 0.08s ease;
+}
+
+#word-hover-popup.visible {
+  opacity: 1;
+}

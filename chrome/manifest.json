@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Word Hover IPA",
+  "version": "1.0",
+  "description": "Hover any word to see its IPA phonetic transcription",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "IPA Settings"
+  },
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["popup.css"],
+      "js": ["content.js"]
+    }
+  ]
+}
