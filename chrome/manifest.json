@@ -4,8 +4,10 @@
   "version": "1.0",
   "description": "Hover any word to see its IPA phonetic transcription",
   "action": {
-    "default_popup": "popup.html",
     "default_title": "IPA Settings"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "permissions": ["storage", "tabs", "scripting"],
   "host_permissions": ["<all_urls>", "file:///*"],
