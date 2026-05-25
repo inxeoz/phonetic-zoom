@@ -138,6 +138,14 @@
       background: rgba(59,130,246,0.08);
       color: #93c5fd;
     }
+
+    .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .slider { position: absolute; cursor: pointer; inset: 0; background: #4b5563; border-radius: 20px; transition: background 0.15s; }
+    .slider::before { content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.15s; }
+    .switch input:checked + .slider { background: #3b82f6; }
+    .switch input:checked + .slider::before { transform: translateX(16px); }
+    .hint { font-size: 10px; color: #6b7280; margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -204,7 +212,18 @@
 
   <div class="field">
     <div class="field-header">
-      <label for="dictUrl">Path or URL</label>
+      <label>Default dictionary</label>
+      <label class="switch">
+        <input type="checkbox" id="useDefault" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+    <p class="hint">~100 common words, always available. When a custom dict is also loaded they are merged — custom entries win on conflict.</p>
+  </div>
+
+  <div class="field">
+    <div class="field-header">
+      <label for="dictUrl">Custom dictionary</label>
     </div>
     <div class="row">
       <input type="text" id="dictUrl" placeholder="file:///path/to/dict.txt or https://…">

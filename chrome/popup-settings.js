@@ -1,6 +1,6 @@
 "use strict";
 
-const DEFAULTS = { fontSize: 22, letterSpacing: 2, padding: 10, verticalOffset: 8, theme: "dark" };
+const DEFAULTS = { fontSize: 22, letterSpacing: 2, padding: 10, verticalOffset: 8, theme: "dark", useDefault: true };
 const SLIDER_KEYS = ["fontSize", "letterSpacing", "padding", "verticalOffset"];
 
 // ── Slider + number input binding ──────────────────────────────────────────────
@@ -41,6 +41,13 @@ chrome.storage.sync.get(Object.keys(DEFAULTS), result => {
     radio.addEventListener("change", () => {
       if (radio.checked) chrome.storage.sync.set({ theme: radio.value });
     });
+  });
+
+  // Default dictionary toggle
+  const useDefaultEl = document.getElementById("useDefault");
+  useDefaultEl.checked = result.useDefault !== false;
+  useDefaultEl.addEventListener("change", () => {
+    chrome.storage.sync.set({ useDefault: useDefaultEl.checked });
   });
 
   for (const key of SLIDER_KEYS) {

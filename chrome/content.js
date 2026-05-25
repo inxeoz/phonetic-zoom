@@ -20,8 +20,8 @@ const THEMES = {
 };
 
 // ── Settings ───────────────────────────────────────────────────────────────────
-const SETTING_KEYS = ["fontSize","letterSpacing","padding","verticalOffset","theme"];
-const DEFAULTS     = { fontSize: 22, letterSpacing: 2, padding: 10, verticalOffset: 8, theme: "dark" };
+const SETTING_KEYS = ["fontSize","letterSpacing","padding","verticalOffset","theme","useDefault"];
+const DEFAULTS     = { fontSize: 22, letterSpacing: 2, padding: 10, verticalOffset: 8, theme: "dark", useDefault: true };
 let settings = { ...DEFAULTS };
 
 function resolveTheme() {
@@ -46,19 +46,19 @@ chrome.storage.sync.get(SETTING_KEYS, r => {
     if (r[k] != null) settings[k] = r[k];
   }
   applySettings();
+  rebuildDictionary();
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "sync") {
     let dirty = false;
     for (const k of SETTING_KEYS) {
-      if (changes[k] != null) { settings[k] = changes[k].newValue; dirty = true; }
+      if (k in changes) { settings[k] = changes[k].newValue ?? DEFAULTS[k]; dirty = true; }
     }
-    if (dirty) applySettings();
+    if (dirty) { applySettings(); rebuildDictionary(); }
   }
-  // Reload dict whenever customDict or dictRev changes
   if (area === "local" && ("dictRev" in changes || "customDict" in changes)) {
-    loadDictionary();
+    loadCustomDict().then(rebuildDictionary);
   }
 });
 
@@ -67,7 +67,9 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 });
 
 // ── Dictionary ─────────────────────────────────────────────────────────────────
-let dictionary = null;
+let defaultDict = null;
+let customDict  = null;
+let dictionary  = null;
 
 function parseDict(text) {
   const map = new Map();
@@ -77,20 +79,39 @@ function parseDict(text) {
     const word = line.slice(0, tab).toLowerCase().trim();
     const raw  = line.slice(tab + 1).trim();
     if (!word || !raw) continue;
-    // Accept /ipa/ or bare ipa
     const m = raw.match(/^\/(.+?)\/?$/);
     map.set(word, m ? m[1] : raw);
   }
   return map;
 }
 
-function loadDictionary() {
-  chrome.storage.local.get("customDict", r => {
-    dictionary = r.customDict ? parseDict(r.customDict) : null;
+// custom entries override default ones for the same word
+function rebuildDictionary() {
+  if (settings.useDefault && defaultDict) {
+    dictionary = customDict ? new Map([...defaultDict, ...customDict]) : defaultDict;
+  } else {
+    dictionary = customDict;
+  }
+  lastWord = null; // force re-render on next tick
+}
+
+function loadDefaultDict() {
+  return fetch(chrome.runtime.getURL("default-dict.txt"))
+    .then(r => r.text())
+    .then(text => { defaultDict = parseDict(text); })
+    .catch(() => { defaultDict = null; });
+}
+
+function loadCustomDict() {
+  return new Promise(resolve => {
+    chrome.storage.local.get("customDict", r => {
+      customDict = r.customDict ? parseDict(r.customDict) : null;
+      resolve();
+    });
   });
 }
 
-loadDictionary();
+Promise.all([loadDefaultDict(), loadCustomDict()]).then(rebuildDictionary);
 
 // ── IPA rendering ──────────────────────────────────────────────────────────────
 function charColor(ch) {
@@ -102,9 +123,9 @@ function renderIPA(ipa) {
   let stress = 0;
 
   for (const ch of ipa) {
-    if (ch === "ˈ") { stress = 2; continue; }  // ˈ primary
-    if (ch === "ˌ") { stress = 1; continue; }  // ˌ secondary
-    if (ch === "." || ch === " ") stress = 0;        // syllable boundary resets
+    if (ch === "ˈ") { stress = 2; continue; }
+    if (ch === "ˌ") { stress = 1; continue; }
+    if (ch === "." || ch === " ") stress = 0;
 
     const span = document.createElement("span");
     span.textContent      = ch;
@@ -122,7 +143,6 @@ const WORD_CHAR = /[\p{L}\p{N}'-]/u;
 function getWordAt(x, y) {
   let node, offset;
 
-  // caretPositionFromPoint is the Firefox standard; fall back to Chrome API
   if (document.caretPositionFromPoint) {
     const pos = document.caretPositionFromPoint(x, y);
     if (!pos) return null;
@@ -144,7 +164,6 @@ function getWordAt(x, y) {
   while (start > 0 && WORD_CHAR.test(text[start - 1])) start--;
   while (end < text.length && WORD_CHAR.test(text[end]))  end++;
 
-  // Strip leading/trailing punctuation that snuck in via WORD_CHAR hyphens/apostrophes
   const raw = text.slice(start, end).replace(/^[-']+|[-']+$/g, "").toLowerCase();
   return raw || null;
 }
@@ -182,14 +201,12 @@ function tick() {
     return;
   }
 
-  // Only re-render when word changes
   if (word !== lastWord) {
     popup.textContent = "";
     popup.appendChild(renderIPA(dictionary.get(word)));
     lastWord = word;
   }
 
-  // Horizontally centred on cursor, bottom edge floats above cursor Y
   const vw   = window.innerWidth;
   const pw   = popup.offsetWidth;
   const left = Math.max(8, Math.min(mouseX - pw / 2, vw - pw - 8));
