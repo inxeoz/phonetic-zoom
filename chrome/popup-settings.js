@@ -102,7 +102,17 @@ function readFileViaTab(url) {
   });
 }
 
-function loadUrl(url) {
+// Rewrite github.com blob URLs → raw.githubusercontent.com to avoid redirect
+// CORS failures (e.g. github.com/.../blob/master/file.txt?raw=true).
+function normalizeUrl(url) {
+  const m = url.match(/^https?:\/\/github\.com\/([^/?#]+\/[^/?#]+)\/blob\/([^?#]+)/);
+  if (m) return `https://raw.githubusercontent.com/${m[1]}/${m[2]}`;
+  return url;
+}
+
+function loadUrl(rawUrl) {
+  const url = normalizeUrl(rawUrl);
+  if (url !== rawUrl) dictUrlEl.value = url;
   if (url.startsWith("file://")) return readFileViaTab(url);
   return fetch(url).then(res => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
