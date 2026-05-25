@@ -118,6 +118,22 @@
     input[type="text"]:focus { outline: none; border-color: #3b82f6; }
     input[type="text"]::placeholder { color: #6b7280; }
     .btn.compact { display: inline-block; width: auto; padding: 5px 12px; }
+
+    .drop-zone {
+      margin-top: 8px;
+      border: 2px dashed #4b5563;
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 11px;
+      transition: border-color 0.1s, background 0.1s, color 0.1s;
+    }
+    .drop-zone.drag-over {
+      border-color: #3b82f6;
+      background: rgba(59,130,246,0.08);
+      color: #93c5fd;
+    }
   </style>
 </head>
 <body>
@@ -190,6 +206,7 @@
       <input type="text" id="dictUrl" placeholder="file:///path/to/dict.txt or https://…">
       <button class="btn primary compact" id="loadBtn">Load</button>
     </div>
+    <div class="drop-zone" id="dropZone">Drop .txt file or URL here</div>
     <p class="status" id="dictStatus">No dictionary loaded</p>
     <button class="btn danger" id="resetBtn" style="margin-top:6px;display:none">Reset</button>
   </div>

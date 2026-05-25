@@ -110,7 +110,27 @@ function loadUrl(url) {
   });
 }
 
-// ── Load ───────────────────────────────────────────────────────────────────────
+// ── Save helper ────────────────────────────────────────────────────────────────
+function saveDict(text, name, url) {
+  chrome.storage.local.get("dictRev", r => {
+    chrome.storage.local.set({
+      customDict:     text,
+      customDictName: name,
+      customDictUrl:  url,
+      dictRev:        (r.dictRev || 0) + 1,
+    }, () => {
+      if (chrome.runtime.lastError) {
+        statusEl.textContent = "Save failed: " + chrome.runtime.lastError.message;
+        statusEl.className   = "status";
+      } else {
+        if (url) dictUrlEl.value = url;
+        showDictStatus(name);
+      }
+    });
+  });
+}
+
+// ── Load button ────────────────────────────────────────────────────────────────
 document.getElementById("loadBtn").addEventListener("click", () => {
   const url = dictUrlEl.value.trim();
   if (!url) return;
@@ -119,28 +139,47 @@ document.getElementById("loadBtn").addEventListener("click", () => {
   statusEl.className   = "status";
 
   loadUrl(url)
-    .then(text => {
-      const name = url.split("/").pop() || url;
-      chrome.storage.local.get("dictRev", r => {
-        chrome.storage.local.set({
-          customDict:     text,
-          customDictName: name,
-          customDictUrl:  url,
-          dictRev:        (r.dictRev || 0) + 1,
-        }, () => {
-          if (chrome.runtime.lastError) {
-            statusEl.textContent = "Save failed: " + chrome.runtime.lastError.message;
-            statusEl.className   = "status";
-          } else {
-            showDictStatus(name);
-          }
-        });
-      });
-    })
+    .then(text => saveDict(text, url.split("/").pop() || url, url))
     .catch(err => {
       statusEl.textContent = "Load failed: " + err.message;
       statusEl.className   = "status";
     });
+});
+
+// ── Drag & drop ────────────────────────────────────────────────────────────────
+const dropZone = document.getElementById("dropZone");
+
+dropZone.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropZone.classList.add("drag-over");
+});
+
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+
+dropZone.addEventListener("drop", e => {
+  e.preventDefault();
+  dropZone.classList.remove("drag-over");
+
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    statusEl.textContent = "Loading…";
+    statusEl.className   = "status";
+    const reader = new FileReader();
+    reader.onload  = () => saveDict(reader.result, file.name, "");
+    reader.onerror = () => { statusEl.textContent = "Error reading file"; statusEl.className = "status"; };
+    reader.readAsText(file);
+    return;
+  }
+
+  const url = (e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text/plain")).trim();
+  if (url) {
+    dictUrlEl.value      = url;
+    statusEl.textContent = "Loading…";
+    statusEl.className   = "status";
+    loadUrl(url)
+      .then(text => saveDict(text, url.split("/").pop() || url, url))
+      .catch(err => { statusEl.textContent = "Load failed: " + err.message; statusEl.className = "status"; });
+  }
 });
 
 // ── Reset ──────────────────────────────────────────────────────────────────────
