@@ -8,61 +8,61 @@
     html { background: #111827; min-height: 100%; }
 
     body {
-      width: 320px;
+      width: 400px;
       margin: 48px auto;
-      padding: 24px;
-      border-radius: 12px;
+      padding: 32px;
+      border-radius: 14px;
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       background: #1f2937;
       color: #f9fafb;
-      font-size: 13px;
+      font-size: 14px;
     }
 
     h1 {
-      font-size: 14px;
+      font-size: 17px;
       font-weight: 600;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       color: #e5e7eb;
     }
 
     .section-label {
-      font-size: 11px;
+      font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: #6b7280;
-      margin-bottom: 10px;
-      margin-top: 4px;
+      margin-bottom: 14px;
+      margin-top: 6px;
     }
 
-    .field { margin-bottom: 14px; }
+    .field { margin-bottom: 18px; }
     .field:last-child { margin-bottom: 0; }
 
     .field-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
-    .field-header label { font-size: 12px; color: #9ca3af; }
-    .field-header .value { font-size: 12px; color: #e5e7eb; font-weight: 500; }
+    .field-header label { font-size: 13px; color: #9ca3af; }
+    .field-header .value { font-size: 13px; color: #e5e7eb; font-weight: 500; }
 
-    .row { display: flex; align-items: center; gap: 10px; }
+    .row { display: flex; align-items: center; gap: 12px; }
     .row input[type="range"] { flex: 1; accent-color: #3b82f6; }
     .row input[type="number"] {
-      width: 52px;
-      padding: 3px 6px;
+      width: 64px;
+      padding: 5px 8px;
       border: 1px solid #4b5563;
-      border-radius: 4px;
+      border-radius: 6px;
       background: #374151;
       color: #f9fafb;
-      font-size: 12px;
+      font-size: 13px;
       text-align: center;
     }
     .row input[type="number"]:focus { outline: none; border-color: #3b82f6; }
 
     .theme-toggle {
       display: flex;
-      border-radius: 6px;
+      border-radius: 8px;
       overflow: hidden;
       border: 1px solid #4b5563;
     }
@@ -70,8 +70,8 @@
     .theme-toggle label {
       flex: 1;
       text-align: center;
-      padding: 6px 0;
-      font-size: 12px;
+      padding: 8px 0;
+      font-size: 13px;
       color: #9ca3af;
       background: #374151;
       cursor: pointer;
@@ -86,12 +86,12 @@
     .btn {
       display: block;
       width: 100%;
-      padding: 7px 0;
+      padding: 10px 0;
       border: 1px solid #4b5563;
-      border-radius: 6px;
+      border-radius: 8px;
       background: #374151;
       color: #e5e7eb;
-      font-size: 12px;
+      font-size: 13px;
       cursor: pointer;
       text-align: center;
     }
@@ -102,9 +102,9 @@
     .btn.danger:hover { background: #ef4444; color: #fff; }
 
     .status {
-      font-size: 11px;
+      font-size: 12px;
       color: #6b7280;
-      margin-top: 6px;
+      margin-top: 8px;
       text-align: center;
     }
     .status.active { color: #10b981; }
@@ -112,25 +112,25 @@
     input[type="text"] {
       flex: 1;
       min-width: 0;
-      padding: 4px 8px;
+      padding: 7px 10px;
       border: 1px solid #4b5563;
-      border-radius: 4px;
+      border-radius: 6px;
       background: #374151;
       color: #f9fafb;
-      font-size: 11px;
+      font-size: 13px;
     }
     input[type="text"]:focus { outline: none; border-color: #3b82f6; }
     input[type="text"]::placeholder { color: #6b7280; }
-    .btn.compact { display: inline-block; width: auto; padding: 5px 12px; }
+    .btn.compact { display: inline-block; width: auto; padding: 7px 14px; }
 
     .drop-zone {
-      margin-top: 8px;
+      margin-top: 10px;
       border: 2px dashed #4b5563;
-      border-radius: 6px;
-      padding: 10px;
+      border-radius: 8px;
+      padding: 14px;
       text-align: center;
       color: #6b7280;
-      font-size: 11px;
+      font-size: 13px;
       transition: border-color 0.1s, background 0.1s, color 0.1s;
     }
     .drop-zone.drag-over {
@@ -139,17 +139,17 @@
       color: #93c5fd;
     }
 
-    .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
-    .slider { position: absolute; cursor: pointer; inset: 0; background: #4b5563; border-radius: 20px; transition: background 0.15s; }
-    .slider::before { content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.15s; }
+    .slider { position: absolute; cursor: pointer; inset: 0; background: #4b5563; border-radius: 24px; transition: background 0.15s; }
+    .slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.15s; }
     .switch input:checked + .slider { background: #3b82f6; }
-    .switch input:checked + .slider::before { transform: translateX(16px); }
-    .hint { font-size: 10px; color: #6b7280; margin-top: 4px; }
+    .switch input:checked + .slider::before { transform: translateX(20px); }
+    .hint { font-size: 11px; color: #6b7280; margin-top: 5px; }
   </style>
 </head>
 <body>
-  <h1>IPA Popup Settings</h1>
+  <h1>Phonetic Zoom</h1>
 
   <div class="section-label">Appearance</div>
 

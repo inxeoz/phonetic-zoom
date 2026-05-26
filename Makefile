@@ -1,5 +1,5 @@
-FIREFOX_XPI := dist/word-hover-ipa-firefox.xpi
-CHROME_ZIP  := dist/word-hover-ipa-chrome.zip
+FIREFOX_XPI := dist/phonetic-zoom-firefox.xpi
+CHROME_ZIP  := dist/phonetic-zoom-chrome.zip
 
 FIREFOX_SRC := $(wildcard firefox/*)
 CHROME_SRC  := $(wildcard chrome/*)
